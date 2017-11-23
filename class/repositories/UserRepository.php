@@ -96,7 +96,7 @@ class UserRepository extends Repository
      * @return array
      */
     public function getAll($limit = 10, $offset = 0) {
-        $query = "SELECT * FROM users ORDER BY id ASC LIMIT ${$offset},${$limit}";
+        $query = "SELECT * FROM users ORDER BY id ASC LIMIT $offset,$limit";
         $result = $this->connection->query( $query );
         $result = $result->fetchAll( PDO::FETCH_ASSOC );
 

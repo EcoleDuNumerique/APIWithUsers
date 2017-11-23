@@ -1,6 +1,40 @@
 <?php
 use \Firebase\JWT\JWT;
 
+/*
+header('Access-Control-Allow-Origin: *');
+header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+*/
+
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    }
+
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+        header("Access-Control-Allow-Headers:        {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+    }
+
+    exit(0);
+}
+
+//var_dump($_SERVER);
+
+/*
+if($method == "OPTIONS") {
+    echo json_encode($method);
+    exit;
+}
+*/
+
 //require "flight/Flight.php";
 require "autoload.php";
 require_once('vendor/autoload.php');
@@ -217,10 +251,18 @@ Flight::route("POST /auth/connexion", function() {
 
     $cfg = Flight::get("cfg");
 
+
     $inputs = [
         'email'     =>  Flight::request()->data->email,
         'password'  =>  Flight::request()->data->password,
     ];
+
+
+    //$json = Flight::request()->getBody();
+    //
+    //$inputs = json_decode( $json , true);//true pour tableau associatif
+
+    //var_dump($inputs);
 
     if( isset($inputs['email']) && isset($inputs['password']) ) {
         $bddManager = Flight::get("BddManager");
@@ -251,17 +293,20 @@ Flight::route("POST /auth/connexion", function() {
             $token = JWT::encode($data, $cfg['key'], $cfg['algo']);
 
             echo json_encode([
-                'token' =>  $token,
+                'success'   =>  true,
+                'token'     =>  $token,
             ]);
 
         } else {
             echo json_encode([
                 'success'   =>  false,
+                'error'     =>  'Aucun utilisateur ne correspond à ces identifiants'
             ]);
         }
     } else {
         echo json_encode([
             'success'   =>  false,
+            'error'     =>  'Les champs ne sont pas valides',
         ]);
     }
 });
@@ -269,7 +314,7 @@ Flight::route("POST /auth/connexion", function() {
 /**
  * Traitement de la requête d'inscription
  */
-Flight::route("POST /auth/inscription", function() {
+Flight::route("OPTIONS /auth/inscription", function() {
     $json = Flight::request()->getBody();
     $inputs = json_decode( $json , true);
 

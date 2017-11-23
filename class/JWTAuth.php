@@ -50,6 +50,36 @@ class JWTAuth
     }
 
     /**
+     * Création du token utilisateur
+     *
+     * @param User $user
+     * @param $cfg
+     * @return string
+     */
+    public function createToken(User $user, $cfg) {
+        $tokenId    = $user->getId();
+        $issuedAt   = time();
+        $notBefore  = $issuedAt + 10;
+        $expire     = $issuedAt + 60 * 60;
+        $serverName = 'localhost';
+
+        $data = [
+            'iat'  => $issuedAt,
+            'jti'  => $tokenId,
+            'iss'  => $serverName,
+            'nbf'  => $notBefore,
+            'exp'  => $expire,
+            'data' => [
+                'userId'   => $user->getId(),
+                'userName' => $user->getFirstname()
+            ]
+        ];
+
+        $token = JWT::encode($data, $cfg['key'], $cfg['algo']);
+        return $token;
+    }
+
+    /**
      * Permet de raffraichir un token
      *
      * @param $token

@@ -257,13 +257,6 @@ Flight::route("POST /auth/connexion", function() {
         'password'  =>  Flight::request()->data->password,
     ];
 
-
-    //$json = Flight::request()->getBody();
-    //
-    //$inputs = json_decode( $json , true);//true pour tableau associatif
-
-    //var_dump($inputs);
-
     if( isset($inputs['email']) && isset($inputs['password']) ) {
         $bddManager = Flight::get("BddManager");
         $repo = $bddManager->getUserRepository();
@@ -272,29 +265,13 @@ Flight::route("POST /auth/connexion", function() {
 
         if( $user ) {
 
-            $tokenId    = $user->getId();
-            $issuedAt   = time();
-            $notBefore  = $issuedAt + 10;
-            $expire     = $issuedAt + 60 * 60;
-            $serverName = 'localhost';
-
-            $data = [
-                'iat'  => $issuedAt,
-                'jti'  => $tokenId,
-                'iss'  => $serverName,
-                'nbf'  => $notBefore,
-                'exp'  => $expire,
-                'data' => [
-                    'userId'   => $user->getId(),
-                    'userName' => $user->getFirstname()
-                ]
-            ];
-
-            $token = JWT::encode($data, $cfg['key'], $cfg['algo']);
+            $JWTAuth = Flight::get("JWTAuth");
+            $token = $JWTAuth->createToken($user, $cfg);
 
             echo json_encode([
                 'success'   =>  true,
                 'token'     =>  $token,
+                'user'      =>  $user,
             ]);
 
         } else {
@@ -314,13 +291,17 @@ Flight::route("POST /auth/connexion", function() {
 /**
  * Traitement de la requête d'inscription
  */
-Flight::route("OPTIONS /auth/inscription", function() {
-    $json = Flight::request()->getBody();
-    $inputs = json_decode( $json , true);
+Flight::route("POST /auth/inscription", function() {
+    $inputs = [
+        'email'         =>  Flight::request()->data->email,
+        'password'      =>  Flight::request()->data->password,
+        'lastname'      =>  Flight::request()->data->lastname,
+        'firstname'     =>  Flight::request()->data->firstname,
+    ];
 
     $error = false;
     foreach( $inputs as $key => $value ) {
-        if( !isset($inputs[$key]) ) {
+        if( !isset($inputs[$key]) || strlen($value) < 1 ) {
             $error = true;
         }
     }
@@ -335,21 +316,45 @@ Flight::route("OPTIONS /auth/inscription", function() {
         $user->setLastName($inputs['lastname']);
         $user->setPassword($inputs['password']);
 
-        $rowCount = $repo->save();
+        $checkEmail = $repo->getByEmail($user);
+        if( $checkEmail ) {
+            echo json_encode([
+                'success'   =>  false,
+                'error'     =>  'Cette adresse email est déjà enregistrée'
+            ]);
+            exit;
+        }
+
+        $rowCount = $repo->save($user);
         if( $rowCount ) {
+            $cfg = Flight::get('cfg');
+            $JWTAuth = Flight::get("JWTAuth");
+
+            $user = new User();
+            $user->setId($rowCount);
+
+            $user = $repo->getById($user);
+            $token = $JWTAuth->createToken($user, $cfg);
+
             echo json_encode([
                 'success'   =>  true,
-                'firstname' =>  $user->getFirstName(),
+                'user'      =>  $user,
+                'token'     =>  $token
             ]);
+            exit;
         } else {
             echo json_encode([
-                'success'   =>  false
+                'success'   =>  false,
+                'error'     =>  'Une erreur est survenue durant l\'inscription',
             ]);
+            exit;
         }
     } else {
         echo json_encode([
-            'success'   =>  false
+            'success'   =>  false,
+            'error'     =>  'Tous les champs sont obligatoires'
         ]);
+        exit;
     }
 });
 

@@ -21,11 +21,11 @@ class UserRepository extends Repository
     public function insert( User $user ) {
         $query = "INSERT INTO users SET firstname=:firstname, lastname=:lastname, email=:email, password=:password";
         $prep = $this->connection->prepare($query);
-        $prep->execute([
-            ':firstname'     =>  $user->getFirstName(),
-            ':lastname'      =>  $user->getLastName(),
-            ':email'         =>  $user->getEmail(),
-            ':password'      =>  $user->getPassword(),
+        $return = $prep->execute([
+            'firstname'     =>  $user->getFirstName(),
+            'lastname'      =>  $user->getLastName(),
+            'email'         =>  $user->getEmail(),
+            'password'      =>  $user->getPassword(),
         ]);
         return $this->connection->lastInsertId();
     }
@@ -38,10 +38,10 @@ class UserRepository extends Repository
         $query = "UPDATE users SET firstname=:firstname, lastname=:lastname, email=:email, password=:password WHERE id=:id";
         $prep = $this->connection->prepare($query);
         $prep->execute([
-            ':firstname'     =>  $user->getFirstName(),
-            ':lastname'      =>  $user->getLastName(),
-            ':email'         =>  $user->getEmail(),
-            ':password'      =>  $user->getPassword(),
+            'firstname'     =>  $user->getFirstName(),
+            'lastname'      =>  $user->getLastName(),
+            'email'         =>  $user->getEmail(),
+            'password'      =>  $user->getPassword(),
         ]);
         return $prep->rowCount();
     }
@@ -55,8 +55,8 @@ class UserRepository extends Repository
         $query = "SELECT * FROM users WHERE email=:email AND password=:password";
         $prep = $this->connection->prepare($query);
         $prep->execute([
-            ':email'     =>  $email,
-            ':password'  =>  md5($password),
+            'email'     =>  $email,
+            'password'  =>  md5($password),
         ]);
 
         $result = $prep->fetch(PDO::FETCH_ASSOC);
@@ -77,6 +77,23 @@ class UserRepository extends Repository
         $prep = $this->connection->prepare( $query );
         $prep->execute([
             "id" => $user->getId()
+        ]);
+        $result = $prep->fetch(PDO::FETCH_ASSOC);
+
+        if( empty( $result ) ){
+            return false;
+        }
+        else {
+            return new User( $result );
+        }
+    }
+
+    public function getByEmail( User $user ){
+
+        $query = "SELECT * FROM users WHERE email=:email LIMIT 1";
+        $prep = $this->connection->prepare( $query );
+        $prep->execute([
+            "email" => $user->getEmail()
         ]);
         $result = $prep->fetch(PDO::FETCH_ASSOC);
 

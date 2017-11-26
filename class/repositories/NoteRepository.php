@@ -77,12 +77,13 @@ class NoteRepository extends Repository {
      */
     private function insert( Note $note ){
 
-        $query = "INSERT INTO notes SET title=:title, content=:content, user_id=:user_id";
+        $query = "INSERT INTO notes SET title=:title, content=:content, user_id=:user_id, picture=:picture";
         $prep = $this->connection->prepare( $query );
         $prep->execute([
             "title"     => $note->getTitle(),
             "content"   => $note->getContent(),
-            "user_id"   => $note->getUserId()
+            "user_id"   => $note->getUserId(),
+            "picture"   =>  $note->getPicture(),
         ]);
         return $this->connection->lastInsertId();
     }
@@ -93,12 +94,13 @@ class NoteRepository extends Repository {
      */
     private function update( Note $note ){
 
-        $query = "UPDATE notes SET title=:title, content=:content WHERE id=:id";
+        $query = "UPDATE notes SET title=:title, content=:content, picture=:picture WHERE id=:id";
         $prep = $this->connection->prepare( $query );
         $prep->execute([
             "id"            => $note->getId(),
             "title"         => $note->getTitle(),
-            "content"       => $note->getContent()
+            "content"       => $note->getContent(),
+            "picture"       => $note->getPicture(),
         ]);
         return $prep->rowCount();
 

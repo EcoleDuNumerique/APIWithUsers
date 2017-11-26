@@ -5,6 +5,23 @@ class Note extends Model implements JsonSerializable {
     private $title;
     private $content;
     private $user_id;
+    private $picture;
+
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * @param mixed $id
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
 
     /**
      * @return mixed
@@ -28,6 +45,13 @@ class Note extends Model implements JsonSerializable {
     }
 
     /**
+     * @return mixed
+     */
+    public function getPicture() {
+        return $this->picture;
+    }
+
+    /**
      * @param $title
      */
     public function setTitle( $title ){
@@ -42,10 +66,17 @@ class Note extends Model implements JsonSerializable {
     }
 
     /**
-     * @param $userId
+     * @param $user_id
      */
     public function setUserId( $user_id ) {
         $this->user_id = $user_id;
+    }
+
+    /**
+     * @param $picture
+     */
+    public function setPicture($picture) {
+        $this->picture = $picture;
     }
 
     /**

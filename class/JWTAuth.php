@@ -21,7 +21,8 @@ class JWTAuth
                         $this->userId = $token->data->userId;
                         return [
                             'success'   =>  true,
-                            'token'     =>  $token
+                            'token'     =>  $token,
+                            'id'        =>  $token->data->userId,
                         ];
                     } catch( Exception $e ) {
                         return [

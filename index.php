@@ -26,14 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-//var_dump($_SERVER);
-
 /*
-if($method == "OPTIONS") {
-    echo json_encode($method);
-    exit;
-}
-*/
+ * Méthode pour récupérer le tableau JSON envoyé côté client
+ */
+
+//$post = file_get_contents('php://input');
+//$post = json_decode($post, true);
 
 //require "flight/Flight.php";
 require "autoload.php";
@@ -93,19 +91,17 @@ Flight::route("GET /users/@id", function($id) {
     $user->setId($id);
 
     $bddManager = Flight::get("BddManager");
-    $repo = $bddManager->getNoteRepository();
-    $notes = $repo->getByUserId($user);
+    $notesRepo = $bddManager->getNoteRepository();
+    $notes = $notesRepo->getByUserId($user);
 
-    if( !$notes ) {
-        echo json_encode([
-            'success'   =>  false
-        ]);
-    } else {
-        echo json_encode([
-            'success'   =>  true,
-            'notes'     =>  $notes,
-        ]);
-    }
+    $userRepo = $bddManager->getUserRepository();
+    $user = $userRepo->getById($user);
+
+    echo json_encode([
+        'success'   =>  true,
+        'notes'     =>  $notes,
+        'user'      =>  $user,
+    ]);
 });
 
 //Créer une note
@@ -371,7 +367,11 @@ Flight::route('GET /users', function() {
 
     $offset = !is_null(Flight::request()->data->offset) ? Flight::request()->data->offset : 0;
     $users = $repo->getAll(10, $offset);
-    echo json_encode($users);
+    echo json_encode([
+        'success'   =>  true,
+        'users'     =>  $users,
+        'count'     =>  count($users)
+    ]);
 });
 
 /**
@@ -402,8 +402,31 @@ Flight::route('GET /account', function() {
         echo json_encode($response);
         exit;
     }
+
+    $bddManager = Flight::get('BddManager');
+    $repo = $bddManager->getUserRepository();
+
+    $user = new User();
+    $user->setId($response['id']);
+    $user = $repo->getById($user);
+
+    if( $user ) {
+        echo json_encode([
+            'succes'    =>  true,
+            'user'      =>  $user,
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'success'   =>  false,
+        'error'     =>  'Une erreur est survenue durant la récupération de vos informations'
+    ]);
 });
 
+/**
+ * On met à jour le compte utilisateur
+ */
 Flight::route('PUT /account/update', function() {
     $JWTAuth = Flight::get("JWTAuth");
     $response = $JWTAuth->hasAccess(Flight::get("cfg")['key']);
@@ -411,8 +434,59 @@ Flight::route('PUT /account/update', function() {
         echo json_encode($response);
         exit;
     }
+
+    $userId = $response['id'];
+    $inputs = [
+        'email'         =>  Flight::request()->data->email,
+        'password'      =>  Flight::request()->data->password,
+        'lastname'      =>  Flight::request()->data->lastname,
+        'firstname'     =>  Flight::request()->data->firstname,
+    ];
+
+    $error = false;
+
+    foreach( $inputs as $key => $value ) {
+        if( !isset($inputs[$key]) || strlen($value) < 1 ) {
+            $error = true;
+        }
+    }
+
+    if( !$error ) {
+        $bddManager = Flight::get('BddManager');
+        $repo = $bddManager->getUserRepository();
+
+        $user = new User();
+        $user->setId($userId);
+        $user->setEmail($inputs['email']);
+        $user->setFirstName($inputs['firstname']);
+        $user->setLastName($inputs['lastname']);
+        $user->setPassword($inputs['password']);
+
+        if( $repo->save($user) > 0 ) {
+            echo json_encode([
+                'success'   =>  true,
+                'user'      =>  $user,
+                'token'     =>  $response['token'],
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'succes'    =>  false,
+            'error'     =>  'Une erreur est survenue durant la mise à jour de vos informations.'
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'success'   =>  false,
+        'error'     =>  'Tous les champs sont obligatoires'
+    ]);
 });
 
+/**
+ * On récupère les notes de l'utilisateur
+ */
 Flight::route('GET /account/notes', function() {
     $JWTAuth = Flight::get("JWTAuth");
 
@@ -421,6 +495,18 @@ Flight::route('GET /account/notes', function() {
         echo json_encode($response);
         exit;
     }
+
+    $bddManager = Flight::get('BddManager');
+    $repo = $bddManager->getNoteRepository();
+
+    $user = new User();
+    $user->setId($response['id']);
+
+    $notes = $repo->getByUserId($user);
+    echo json_encode([
+        'success'   =>  true,
+        'notes'     =>  $notes,
+    ]);
 });
 
 Flight::start();

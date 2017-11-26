@@ -66,14 +66,21 @@ class User extends Model implements JsonSerializable {
         return $this->password;
     }
 
+    public function getAvatar() {
+        $avatar = new \Identicon\Identicon();
+        return $avatar->getImageDataUri($this->email);
+    }
+
     /**
      * @return array
      */
     function jsonSerialize(){
         return [
+            'id'            =>  $this->id,
             'email'         =>  $this->email,
             'first_name'    =>  $this->firstName,
             'last_name'     =>  $this->lastName,
+            'avatar'        =>  $this->getAvatar(),
         ];
     }
 }

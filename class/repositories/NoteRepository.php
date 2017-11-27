@@ -13,7 +13,6 @@ class NoteRepository extends Repository {
 
         foreach( $result as $data ){
             $notes[] = new Note( $data );
-            var_dump(new Note($data));
         }
 
         return $notes;  

@@ -1,6 +1,9 @@
 <?php
 use \Firebase\JWT\JWT;
 
+date_default_timezone_set('Europe/Paris');
+
+
 /*
 header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
@@ -54,7 +57,10 @@ Flight::route("GET /notes", function(){
     $repo = $bddManager->getNoteRepository();
     $notes = $repo->getAll();
 
-    echo json_encode ( $notes );
+    echo json_encode ( [
+        'success'   =>  true,
+        'notes'     =>  $notes,
+    ] );
 
 });
 
@@ -363,7 +369,7 @@ Flight::route("POST /auth/inscription", function() {
 });
 
 Flight::route('/', function() {
-    echo md5('toto');
+    var_dump(date('Y-m-d H:i:s'));
 });
 
 /**
@@ -434,7 +440,7 @@ Flight::route('GET /account', function() {
 
     if( $user ) {
         echo json_encode([
-            'succes'    =>  true,
+            'success'    =>  true,
             'user'      =>  $user,
         ]);
         exit;

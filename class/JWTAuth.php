@@ -98,7 +98,7 @@ class JWTAuth
             $decoded['iat'] = time();
             $decoded['exp'] = time() + 3600;
 
-            return JWT::encode($decoded, $secretKey);
+            return JWT::encode($decoded, $secretKey, ['HS512']);
         }catch ( \Exception $e ){
             return $e->getMessage();
         }

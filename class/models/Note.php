@@ -88,6 +88,7 @@ class Note extends Model implements JsonSerializable {
             "title"     => $this->title,
             "content"   => $this->content,
             "user_id"   => $this->user_id,
+            "picture"   => $this->picture,
         ];
     }
 

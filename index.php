@@ -122,19 +122,27 @@ Flight::route("POST /note", function(){
         "id" => 0
     ];
 
+
     if( strlen( $title ) > 0 && strlen( $content ) > 0 ) {
 
         $note = new Note();
         $note->setTitle( $title );
         $note->setContent( $content );
+        $note->setUserId($response['id']);
+        $note->setPicture(null);
 
         $bddManager = Flight::get("BddManager");
         $repo = $bddManager->getNoteRepository();
         $id = $repo->save( $note );
 
         if( $id != 0 ){
+            $note = new Note();
+            $note->setId($id);
+            $note = $repo->getById($note);
+
             $status["success"] = true;
             $status["id"] = $id;
+            $status["note"] = $note;
         }
 
     }
@@ -379,17 +387,31 @@ Flight::route('GET /users', function() {
  */
 Flight::route('GET /refresh', function() {
     $JWTAuth = Flight::get("JWTAuth");
-    $response = $JWTAuth->hasAccess(Flight::get('cfg')['key']);
-    if( !$response['success'] ) {
-        echo json_encode($response);
+
+    if( preg_match('/Bearer\s((.*)\.(.*)\.(.*))/', $JWTAuth->getHeaders(), $matches) ) {
+        $jwt = $matches[1];
+
+        if( $jwt ) {
+            $newToken = $JWTAuth->refresh($jwt, Flight::get('cfg')['key']);
+            echo json_encode([
+                'success'   =>  true,
+                'token'     =>  $newToken
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'success'   =>  false,
+            'error'     =>  'Aucune session active dernièrement',
+        ]);
         exit;
     }
 
-    $newToken = $JWTAuth->refresh($response['token'], Flight::get('cfg')['key']);
     echo json_encode([
-        'success'   =>  true,
-        'token'     =>  $newToken
+        'success'   =>  false,
+        'error'     =>  'Token manquant',
     ]);
+    exit;
 });
 
 /**

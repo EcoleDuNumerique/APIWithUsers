@@ -17,7 +17,20 @@ abstract class Model {
 
     protected function hydrate( $datas ){   
         foreach( $datas as $key => $data ){
-            $method = "set".ucfirst($key);
+
+            if( preg_match('/_/', $key) ) {
+                $finalKey = '';
+                $keys = explode('_', $key);
+
+                foreach( $keys as $k ) {
+                    $finalKey .= ucfirst($k);
+                }
+
+                $method = 'set' . $finalKey;
+            } else {
+                $method = "set".ucfirst($key);
+            }
+
             if( method_exists( $this, $method ) ){
                 $this->$method( $data );
             }

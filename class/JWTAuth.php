@@ -89,11 +89,11 @@ class JWTAuth
      */
     public function refresh($token, $secretKey) {
         try{
-            $decoded = JWT::decode($token, $secretKey, ['HS256']);
+            $decoded = JWT::decode($token, $secretKey, ['HS512']);
             return JWT::encode($decoded, $secretKey);
         }catch ( \Firebase\JWT\ExpiredException $e ) {
             JWT::$leeway = 720000;
-            $decoded = (array) JWT::decode($token, $secretKey, ['HS256']);
+            $decoded = (array) JWT::decode($token, $secretKey, ['HS512']);
 
             $decoded['iat'] = time();
             $decoded['exp'] = time() + 3600;
@@ -107,7 +107,7 @@ class JWTAuth
     /**
      * @return null|string
      */
-    private function getHeaders() {
+    public function getHeaders() {
         $headers = null;
         if (isset($_SERVER['Authorization'])) {
             $headers = trim($_SERVER["Authorization"]);

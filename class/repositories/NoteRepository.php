@@ -10,8 +10,10 @@ class NoteRepository extends Repository {
         $result = $result->fetchAll( PDO::FETCH_ASSOC );
 
         $notes = [];
+
         foreach( $result as $data ){
             $notes[] = new Note( $data );
+            var_dump(new Note($data));
         }
 
         return $notes;  
@@ -83,7 +85,7 @@ class NoteRepository extends Repository {
             "title"     => $note->getTitle(),
             "content"   => $note->getContent(),
             "user_id"   => $note->getUserId(),
-            "picture"   =>  $note->getPicture(),
+            "picture"   => $note->getPicture(),
         ]);
         return $this->connection->lastInsertId();
     }

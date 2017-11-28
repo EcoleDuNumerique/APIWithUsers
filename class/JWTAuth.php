@@ -17,7 +17,8 @@ class JWTAuth
                 if( $jwt ) {
 
                     try {
-                        $token = JWT::decode($jwt, $secretKey, array('HS512'));
+                        $cfg = Flight::get('cfg');
+                        $token = JWT::decode($jwt, $secretKey, $cfg['algo']);
                         $this->userId = $token->data->userId;
                         return [
                             'success'   =>  true,
@@ -76,7 +77,7 @@ class JWTAuth
             ]
         ];
 
-        $token = JWT::encode($data, $cfg['key'], $cfg['algo']);
+        $token = JWT::encode($data, $cfg['key']);
         return $token;
     }
 
@@ -88,17 +89,23 @@ class JWTAuth
      * @return string
      */
     public function refresh($token, $secretKey) {
+        $cfg = Flight::get('cfg');
         try{
-            $decoded = JWT::decode($token, $secretKey, ['HS512']);
+            $decoded = JWT::decode($token, $secretKey, $cfg['algo']);
             return JWT::encode($decoded, $secretKey);
         }catch ( \Firebase\JWT\ExpiredException $e ) {
             JWT::$leeway = 720000;
-            $decoded = (array) JWT::decode($token, $secretKey, ['HS512']);
+            $decoded = (array) JWT::decode($token, $secretKey, $cfg['algo']);
 
-            $decoded['iat'] = time();
-            $decoded['exp'] = time() + 3600;
+            $issuedAt   = time();
+            $notBefore  = $issuedAt + 10;
+            $expire     = $issuedAt + 60 * 60;
 
-            return JWT::encode($decoded, $secretKey, ['HS512']);
+            $decoded['iat'] = $issuedAt;
+            $decoded['nbf'] = $notBefore;
+            $decoded['exp'] = $expire;
+
+            return JWT::encode($decoded, $secretKey);
         }catch ( \Exception $e ){
             return $e->getMessage();
         }

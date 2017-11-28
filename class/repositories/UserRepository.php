@@ -42,6 +42,7 @@ class UserRepository extends Repository
             'lastname'      =>  $user->getLastName(),
             'email'         =>  $user->getEmail(),
             'password'      =>  $user->getPassword(),
+            'id'            =>  $user->getId(),
         ]);
         return $prep->rowCount();
     }

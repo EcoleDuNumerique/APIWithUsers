@@ -44,7 +44,7 @@ class NoteRepository extends Repository {
      * @return array
      */
     public function getByUserId( User $user ) {
-        $query = "SELECT * FROM notes WHERE user_id=:user_id";
+        $query = "SELECT * FROM notes WHERE user_id=:user_id ORDER BY id DESC";
         $prep = $this->connection->prepare( $query );
         $prep->execute([
             'user_id'   =>  $user->getId(),

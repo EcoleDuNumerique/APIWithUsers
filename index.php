@@ -3,7 +3,6 @@ use \Firebase\JWT\JWT;
 
 date_default_timezone_set('Europe/Paris');
 
-
 /*
 header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
@@ -19,7 +18,7 @@ if (isset($_SERVER['HTTP_ORIGIN'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
     if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE, PATCH");
     }
 
     if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
@@ -42,7 +41,7 @@ require_once('vendor/autoload.php');
 
 $cfg = [
     'key'   =>  'azertyuiop',
-    'algo'  =>  'HS512'
+    'algo'  =>  ['HS256']
 ];
 
 //Enregistrer en global dans Flight le BddManager
@@ -196,7 +195,7 @@ Flight::route("DELETE /note/@id", function( $id ){
     
 });
 
-Flight::route("PUT /note/@id", function( $id ){
+Flight::route("POST /note/@id", function( $id ){
 
     $JWTAuth = Flight::get("JWTAuth");
     $response = $JWTAuth->hasAccess(Flight::get("cfg")['key']);
@@ -207,8 +206,8 @@ Flight::route("PUT /note/@id", function( $id ){
 
     //Pour récuperer des données PUT -> les données sont encodé en json string
     //avec ajax, puis décodé ici en php
-    $json = Flight::request()->getBody();
-    $_PUT = json_decode( $json , true);//true pour tableau associatif
+    //$json = Flight::request()->getBody();
+    //$_PUT = json_decode( $json , true);//true pour tableau associatif
 
     $status = [
         'success'   =>  false,
@@ -221,7 +220,8 @@ Flight::route("PUT /note/@id", function( $id ){
     $note = new Note();
     $note->setId($id);
     $note = $repo->getById($note);
-    if( $note && $note->getUserId() != $response['token']->data->userId ) {
+
+    if( !$note || (intval($note->getUserId()) != intval($response['token']->data->userId)) ) {
         echo json_encode([
             'success'   =>  false,
             'error'     =>  'Vous n\'êtes pas autorisés à réaliser cette action.'
@@ -229,28 +229,37 @@ Flight::route("PUT /note/@id", function( $id ){
         exit;
     }
 
-    $status['success'] = false;
-    $status['error'] = 'Vous n\'êtes pas autorisés à réaliser cette action.';
+    $inputs = [
+        'title'     =>  Flight::request()->data->title,
+        'content'   =>  Flight::request()->data->content,
+    ];
 
-    if( isset( $_PUT["title"] ) && isset( $_PUT["content"] ) ){
+    var_dump($inputs);
 
-        $title = $_PUT["title"];
-        $content = $_PUT["content"];
+    if( isset( $inputs['title'] ) && isset( $inputs["content"] ) ){
 
         $note = new Note();
         $note->setId( $id );
-        $note->setTitle( $title );
-        $note->setContent( $content );
+        $note->setTitle( $inputs['title'] );
+        $note->setContent( $inputs['content'] );
+        $note->setPicture(null);
+        $note->setUserId($response['token']->data->userId);
 
         $rowCount = $repo->save( $note );
 
         if( $rowCount == 1 ){
-            $status["success"] = true;
+            echo json_encode([
+                'success'   =>  true,
+                'note'      =>  $note,
+            ]);
+            exit;
         }
-
     }
 
-    echo json_encode( $status );
+    echo json_encode( [
+        'success'   =>  false,
+        'error'     =>  'Tous les champs doivent être remplis.',
+    ] );
 
 });
 
@@ -396,7 +405,6 @@ Flight::route('GET /refresh', function() {
 
     if( preg_match('/Bearer\s((.*)\.(.*)\.(.*))/', $JWTAuth->getHeaders(), $matches) ) {
         $jwt = $matches[1];
-
         if( $jwt ) {
             $newToken = $JWTAuth->refresh($jwt, Flight::get('cfg')['key']);
             echo json_encode([
@@ -455,7 +463,7 @@ Flight::route('GET /account', function() {
 /**
  * On met à jour le compte utilisateur
  */
-Flight::route('PUT /account/update', function() {
+Flight::route('POST /account/update', function() {
     $JWTAuth = Flight::get("JWTAuth");
     $response = $JWTAuth->hasAccess(Flight::get("cfg")['key']);
     if( !$response['success'] ) {
